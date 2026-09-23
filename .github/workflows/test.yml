@@ -1,0 +1,33 @@
+name: workflow
+
+on: [workflow_dispatch,push]
+
+jobs:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchains
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            nodejs \
+            npm \
+            python3 \
+            python3-pip \
+            gcc \
+            g++ \
+            golang \
+            rustc \
+            cargo
+
+      - name: Start compiling test atifacts
+        run: src/build.sh
+
+      - name : Run Tests
+        run: ./helloworldtest run/*
