@@ -1,0 +1,177 @@
+#!/bin/bash
+
+printfeild() {
+  case "$1" in
+    1)
+      printf '[\033[31mFailed\033[0m]'
+      (( FailCount++ ))
+      (( Fail++ ))
+      ;;
+    0)
+      printf '[\033[32mPassed\033[0m]'
+      (( PassCount++ ))
+      (( Pass++ ))
+      ;;
+    2)
+      printf '[\033[33m Warn \033[0m]'
+      (( WarnCount++ ))
+      (( Warn++ ))
+      ;;
+    *)
+      printf '[      ]'
+      ;;
+    esac
+  printf ' %-20s : %-20s : %s\n' "$TestProg $TestProgArg" "$2" "$3"
+}
+
+IsExaAble() {
+  if [ "${TestProg#*/}" = "$TestProg" ]; then
+    command -v "$TestProg" >/dev/null 2>&1
+  else
+    [ -x "$TestProg" ]
+  fi
+}
+
+CheckOutHex() {
+  case "$TestOutHex" in
+    48656c6c6f2c20576f726c64210a)
+      printfeild 0 "Output" "$(cat "$TempDir/stdout")"
+      ;;
+    48656c6c6f20576f726c64210a|48656c6c6f2c20576f726c6421|48656c6c6f20576f726c6421)
+      printfeild 2 "Output" "$(cat "$TempDir/stdout")"
+      ;;
+    68656c6c6f20576f726c64210a|656c6c6f20576f726c6421|68656c6c6f20776f726c6421|48656c6c6f20776f726c6421)
+      printfeild 2 "Output" "$(cat "$TempDir/stdout")"
+      ;;
+    *)
+      printfeild 1 "Output" "$(cat $TempDir/stdout)"
+      ;;
+  esac
+}
+
+CheckStderr() {
+  if [ -s "$TempDir/stderr" ]; then
+    StderrHex="$(od -An -tx1 "$TempDir/stderr" | tr -d ' ')"
+
+    case "$StderrHex" in
+      0a)
+        printfeild 2 "stderr" "\n"
+        ;;
+      *4d697a756b69*)
+        printfeild 0 "stderr" "Mizuki found"
+        ;;
+      *)
+        printfeild 1 "stderr" "NOT EMPTY"
+        ;;
+    esac
+  else
+    printfeild 0 "stderr" "Empty"
+  fi
+}
+
+CheckRuntime() {
+  Runtime=$((TestEnd - TestStart))
+
+  if (( Runtime <= MAX_runtime )); then
+    printfeild 0 "Runtime" "${Runtime}ns"
+  elif (( Runtime <= MAX_runtime * 15 / 10 )); then
+    printfeild 2 "Runtime" "${Runtime}ns"
+  else
+    printfeild 1 "Runtime" "${Runtime}ns"
+  fi
+}
+
+ParseTestProg() {
+  read -r -a args <<< "$TestProg"
+
+  TestProg="${args[0]}"
+  TestProgArg=("${args[@]:1}")
+}
+
+TestResult() {
+  if (( Fail > Pass )); then
+    printfeild -1 "Result" "Failed"
+  elif (( Fail > 0 )); then
+    printfeild -1 "Result" "Passed with errors"
+  elif (( Warn > 0 )); then
+    printfeild -1 "Result" "Passed with warnings"
+  else
+    printfeild -1 "Result" "Passed"
+  fi
+}
+
+TestSummary() {
+  printf '%*s\n' "$MaxSumLine" '' | tr ' ' '-'
+  printf 'Test summary : \n'
+  printf "%-5s count : %s\n" "Pass" "$PassCount"
+  printf "%-5s count : %s\n" "Fail" "$FailCount"
+  printf "%-5s count : %s\n" "Warn" "$WarnCount"
+}
+
+if [[ -z $MAX_runtime ]]; then
+  MAX_runtime=30000000
+fi
+
+if [[ -n $Max_Runtime_ms ]]; then
+  MAX_runtime=$((Max_Runtime_ms * 1000000))
+  printfeild 2 "Max Runtime" "${MAX_runtime}ns"
+  printf '\n'
+fi
+
+if [[ -n $Max_Runtime_s ]]; then
+  MAX_runtime=$((Max_Runtime_s * 1000000000))
+  printfeild 2 "Max Runtime" "${MAX_runtime}ns"
+  printf '\n'
+fi
+
+FailCount=0
+PassCount=0
+WarnCount=0
+
+TempDir="$(mktemp -d /tmp/helloworldtest.XXXXXX)"
+
+MaxSumLine=30
+
+for TestProg in "$@"; do
+
+  ParseTestProg
+
+  Warn=0
+  Pass=0
+  Fail=0
+
+  if ! IsExaAble; then
+    printfeild 1 "Executable" "No"
+  else
+    printfeild 0 "Executable" "Yes"
+    
+    TestStart=$(date +%s%N)
+    "$TestProg" "${TestProgArg[@]}" 2>"$TempDir/stderr" >"$TempDir/stdout"
+    TestErrcode=$?
+    TestEnd=$(date +%s%N)
+
+    TestOutHex="$(od -An -tx1 "$TempDir/stdout" | tr -d ' ')"
+
+    CheckOutHex
+
+    if (( TestErrcode == 0 )); then
+      printfeild 0 "Errorcode" "$TestErrcode"
+    else
+      printfeild 1 "Errorcode" "$TestErrcode"
+    fi
+    
+    CheckRuntime      
+
+    CheckStderr
+
+    rm $TempDir/*
+
+  fi
+  
+  TestResult
+  printf '\n'
+done
+
+rm -r "$TempDir"
+
+TestSummary
