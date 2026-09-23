@@ -6,7 +6,7 @@
 
 - bash
 
-- modern unix-ish setup
+- modern GNU/Linux-ish setup
 
 ## Usage
 

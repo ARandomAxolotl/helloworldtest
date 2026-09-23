@@ -35,19 +35,18 @@ IsExaAble() {
 CheckOutHex() {
   case "$TestOutHex" in
     48656c6c6f2c20576f726c64210a)
-      printfeild 0 "Output" "$(cat "$TempDir/stdout")"
-      printfeild -1 "Hex" "$TestOutHex"
+      printfeild 0 "Output" "$(<"$TempDir/stdout")"
       ;;
     48656c6c6f20576f726c64210a|48656c6c6f2c20576f726c6421|48656c6c6f20576f726c6421)
-      printfeild 2 "Output" "$(cat "$TempDir/stdout")"
+      printfeild 2 "Output" "$(<"$TempDir/stdout")"
       printfeild -1 "Hex" "$TestOutHex"
       ;;
     68656c6c6f20576f726c64210a|656c6c6f20576f726c6421|68656c6c6f20776f726c6421|48656c6c6f20776f726c6421)
-      printfeild 2 "Output" "$(cat "$TempDir/stdout")"
+      printfeild 2 "Output" "$(<"$TempDir/stdout")"
       printfeild -1 "Hex" "$TestOutHex"
       ;;
     *)
-      printfeild 1 "Output" "$(cat $TempDir/stdout)"
+      printfeild 1 "Output" "$(<"$TempDir/stdout")"
       printfeild -1 "Hex" "$TestOutHex"
       printfeild -1 "Expected" "48656c6c6f2c20576f726c64210a"
       ;;
@@ -94,7 +93,7 @@ ParseTestProg() {
 }
 
 TestResult() {
-  if (( Fail > Pass )); then
+  if (( Fail >= Pass )); then
     printfeild -1 "Result" "Failed"
     (( FailedTest++ ))
   elif (( Fail > 0 )); then
@@ -116,6 +115,10 @@ TestSummary() {
 
 if [[ -z $MAX_runtime ]]; then
   MAX_runtime=30000000
+fi
+
+if [[ -z $Runtime_limit ]]; then
+  Runtime_limit=5
 fi
 
 if [[ -n $Max_Runtime_ms ]]; then
@@ -153,25 +156,27 @@ for TestProg in "$@"; do
     printfeild 0 "Executable" "Yes"
     
     TestStart=$(date +%s%N)
-    "$TestProg" "${TestProgArg[@]}" 2>"$TempDir/stderr" >"$TempDir/stdout"
+    timeout "$Runtime_limit" "$TestProg" "${TestProgArg[@]}" 2>"$TempDir/stderr" >"$TempDir/stdout"
     TestErrcode=$?
     TestEnd=$(date +%s%N)
-
-    TestOutHex="$(od -An -tx1 "$TempDir/stdout" | tr -d ' ')"
-
-    CheckOutHex
-
-    if (( TestErrcode == 0 )); then
-      printfeild 0 "Errorcode" "$TestErrcode"
+    if (( TestErrcode == 124 )); then
+      printfeild 1 "Runtime" "Timed out"
     else
-      printfeild 1 "Errorcode" "$TestErrcode"
-    fi
+
+      TestOutHex="$(od -An -tx1 "$TempDir/stdout" | tr -d ' ')"
+      CheckOutHex
+
+      if (( TestErrcode == 0 )); then
+        printfeild 0 "Errorcode" "$TestErrcode"
+      else
+        printfeild 1 "Errorcode" "$TestErrcode"
+      fi
     
-    CheckRuntime      
+      CheckRuntime      
+      CheckStderr
 
-    CheckStderr
-
-    rm $TempDir/*
+      rm "$TempDir"/*
+    fi
 
   fi
   
