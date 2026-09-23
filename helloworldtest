@@ -3,19 +3,28 @@
 printfeild() {
   case "$1" in
     1)
-      printf '[\033[31mFailed\033[0m]'
+      printf '[\e[31mFailed\e[0m]'
       (( FailCount++ ))
       (( Fail++ ))
       ;;
     0)
-      printf '[\033[32mPassed\033[0m]'
+      printf '[\e[32mPassed\e[0m]'
       (( PassCount++ ))
       (( Pass++ ))
       ;;
     2)
-      printf '[\033[33m Warn \033[0m]'
+      printf '[\e[33m Warn \e[0m]'
       (( WarnCount++ ))
       (( Warn++ ))
+      ;;
+    3)
+      printf '[\e[31mError \e[0m]'
+      ;;
+    4)
+      printf '[\e[33mNotice\e[0m]'
+      ;;
+    5)
+      printf '[\e[36mResult\e[0m]'
       ;;
     *)
       printf '[      ]'
@@ -102,16 +111,16 @@ ParseTestProg() {
 
 TestResult() {
   if (( Fail >= Pass )); then
-    printfeild -1 "Result" "Failed"
+    printfeild 5 "Result" "Failed"
     (( FailedTest++ ))
   elif (( Fail > 0 )); then
-    printfeild -1 "Result" "Passed with errors"
+    printfeild 5 "Result" "Passed with errors"
     (( WarnedTest++ ))
   elif (( Warn > 0 )); then
-    printfeild -1 "Result" "Passed with warnings"
+    printfeild 5 "Result" "Passed with warnings"
     (( WarnedTest++ ))
   else
-    printfeild -1 "Result" "Passed"
+    printfeild 5 "Result" "Passed"
     (( PassedTest++ ))
   fi
 }
@@ -179,24 +188,75 @@ main() {
   fi
 }
 
+Runtime_limitLck=0
+Max_RuntimeLck=0
+
 if [[ -z $MAX_runtime ]]; then
   MAX_runtime=30000000
 fi
 
-if [[ -z $Runtime_limit ]]; then
-  Runtime_limit=5
-fi
-
 if [[ -n $Max_Runtime_ms ]]; then
-  MAX_runtime=$((Max_Runtime_ms * 1000000))
-  printfeild 2 "Max Runtime" "${MAX_runtime}ns"
-  printf '\n'
+  if (( Max_Runtime_ms <= 0 )); then
+    printfeild 3 "Max runtime" "cannot be 0 or lower, using default of 30ms (or 0.03s)"
+    Max_RuntimeLck=1
+  else
+    MAX_runtime=$((Max_Runtime_ms * 1000000))
+    if ! [[ -n $Max_Runtime_s ]]; then
+      printfeild 4 "Max runtime" "${MAX_runtime}ns"
+    fi
+  fi
+
+  if ! [[ -n $Max_Runtime_s ]]; then
+    if [[ -z $Runtime_limit ]]; then
+      printf '\n'
+    fi
+  fi
+  
 fi
 
 if [[ -n $Max_Runtime_s ]]; then
-  MAX_runtime=$((Max_Runtime_s * 1000000000))
-  printfeild 2 "Max Runtime" "${MAX_runtime}ns"
-  printf '\n'
+  if (( Max_Runtime_s <= 0 )); then
+    
+    if (( Max_RuntimeLck == 0 )); then
+      printfeild 3 "Max runtime" "cannot be 0 or lower, using default of 30ms (or 0.03s)"
+    fi
+
+    if [[ -z $Runtime_limit ]]; then
+      printfeild 3 "Runtime limit" "cannot be 0 or lower, using default of 5s  (or 5000ms)"
+      Runtime_limitLck=1
+      printf '\n'
+    fi
+    
+  else
+    if [[ -n $Max_Runtime_ms ]]; then
+      (( MAX_runtime+=Max_Runtime_s * 1000000000 ))
+    else
+      MAX_runtime=$((Max_Runtime_s * 1000000000))
+    fi
+    printfeild 4 "Max runtime" "${MAX_runtime}ns"
+
+    if [[ -z $Runtime_limit ]]; then
+      Runtime_limit=$(( Max_Runtime_s * 2 ))
+      printfeild 4 "Runtime limit" "${Runtime_limit}s"
+      Runtime_limitLck=1
+      printf '\n'
+    fi
+  fi 
+fi
+
+if [[ -z $Runtime_limit ]]; then
+  Runtime_limit=5
+else
+  if (( Runtime_limit <= 0 )); then
+    printfeild 3 "Runtime limit" "cannot be 0 or lower, using default of 5s  (or 5000ms)"
+    printf '\n'
+    Runtime_limit=5
+  else
+    if (( Runtime_limitLck == 0 )); then
+      printfeild 4 "Runtime limit" "${Runtime_limit}s"
+      printf '\n'
+    fi
+  fi
 fi
 
 FailCount=0
@@ -207,6 +267,8 @@ TempDir="$(mktemp -d /tmp/helloworldtest.XXXXXX)"
 
 MaxSumLine=30
 FailedTest=0
+PassedTest=0
+WarnedTest=0
 
 for TestProg in "$@"; do
   main  

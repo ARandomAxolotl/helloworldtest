@@ -26,3 +26,11 @@ jobs:
 
       - name: Run Tests
         run: ./helloworldtest run/*
+
+      - name: Run Tests with options
+        run: |
+          Max_Runtime_ms=25 ./helloworldtest run/*
+          Max_Runtime_s=0 ./helloworldtest run/*
+          Runtime_limit=4 Max_Runtime_ms=20 ./helloworldtest run/*
+          Max_Runtime_ms=1 Max_Runtime_s=0 ./helloworldtest run/*
+          Runtime_limit=0 Max_Runtime_ms=0 Max_Runtime_s=0 ./helloworldtest run/*
