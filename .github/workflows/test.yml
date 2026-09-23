@@ -3,7 +3,7 @@ name: workflow
 on: [workflow_dispatch,push]
 
 jobs:
-  build:
+  do_it:
     runs-on: ubuntu-latest
 
     steps:
