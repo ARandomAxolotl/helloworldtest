@@ -98,19 +98,77 @@ TestResult() {
     (( FailedTest++ ))
   elif (( Fail > 0 )); then
     printfeild -1 "Result" "Passed with errors"
+    (( WarnedTest++ ))
   elif (( Warn > 0 )); then
     printfeild -1 "Result" "Passed with warnings"
+    (( WarnedTest++ ))
   else
     printfeild -1 "Result" "Passed"
+    (( PassedTest++ ))
   fi
 }
 
 TestSummary() {
   printf '%*s\n' "$MaxSumLine" '' | tr ' ' '-'
+
   printf 'Test summary : \n'
-  printf "%-5s count : %s\n" "Pass" "$PassCount"
-  printf "%-5s count : %s\n" "Fail" "$FailCount"
-  printf "%-5s count : %s\n" "Warn" "$WarnCount"
+  printf "Total \033[32m%-5s\033[0m count : %s\n" "Pass" "$PassCount"
+  printf "Total \033[31m%-5s\033[0m count : %s\n" "Fail" "$FailCount"
+  printf "Total \033[33m%-5s\033[0m count : %s\n" "Warn" "$WarnCount"
+  printf '\n'
+
+  printf '\033[32m%-6s\033[0m test count : %s\n' "Pass" "$PassedTest"
+  printf '\033[33m%-6s\033[0m test count : %s\n' "Pass*" "$WarnedTest"
+  printf '\033[31m%-6s\033[0m test count : %s\n' "Fail" "$FailedTest"
+  printf '\033[90m\033[3m%s\n\033[0m' "* : It didn't fail too \"dramastic\"."
+
+  printf '%*s\n' "$MaxSumLine" '' | tr ' ' '-'
+}
+
+main() {
+  ParseTestProg
+
+  Warn=0
+  Pass=0
+  Fail=0
+
+  if ! IsExaAble; then
+    printfeild 1 "Executable" "No"
+  else
+    printfeild 0 "Executable" "Yes"
+    
+    TestStart=$(date +%s%N)
+    (
+      timeout "$Runtime_limit" "$TestProg" "${TestProgArg[@]}" \
+      2>"$TempDir/stderr" >"$TempDir/stdout"
+      exit $?
+    ) 2>/dev/null
+    TestErrcode=$?
+    TestEnd=$(date +%s%N)
+    case "$TestErrcode" in
+      124)
+        printfeild 1 "Runtime" "Timed out"
+        return
+        ;;
+      0)
+        printfeild 0 "Errorcode" "$TestErrcode"
+        ;;
+      139)
+        printfeild 1 "Errorcode" "Segfaulted(Mizuki is mad at this)"
+        return
+        ;;
+      *)
+        printfeild 1 "Errorcode" "$TestErrcode"
+    esac
+      
+    TestOutHex="$(od -An -tx1 "$TempDir/stdout" | tr -d ' ')"
+    CheckOutHex
+    
+    CheckRuntime      
+    CheckStderr
+
+    rm "$TempDir"/*
+  fi
 }
 
 if [[ -z $MAX_runtime ]]; then
@@ -143,43 +201,7 @@ MaxSumLine=30
 FailedTest=0
 
 for TestProg in "$@"; do
-
-  ParseTestProg
-
-  Warn=0
-  Pass=0
-  Fail=0
-
-  if ! IsExaAble; then
-    printfeild 1 "Executable" "No"
-  else
-    printfeild 0 "Executable" "Yes"
-    
-    TestStart=$(date +%s%N)
-    timeout "$Runtime_limit" "$TestProg" "${TestProgArg[@]}" 2>"$TempDir/stderr" >"$TempDir/stdout"
-    TestErrcode=$?
-    TestEnd=$(date +%s%N)
-    if (( TestErrcode == 124 )); then
-      printfeild 1 "Runtime" "Timed out"
-    else
-
-      TestOutHex="$(od -An -tx1 "$TempDir/stdout" | tr -d ' ')"
-      CheckOutHex
-
-      if (( TestErrcode == 0 )); then
-        printfeild 0 "Errorcode" "$TestErrcode"
-      else
-        printfeild 1 "Errorcode" "$TestErrcode"
-      fi
-    
-      CheckRuntime      
-      CheckStderr
-
-      rm "$TempDir"/*
-    fi
-
-  fi
-  
+  main  
   TestResult
   printf '\n'
 done
