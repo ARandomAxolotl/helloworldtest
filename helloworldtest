@@ -76,12 +76,20 @@ CheckStderr() {
 CheckRuntime() {
   Runtime=$((TestEnd - TestStart))
 
-  if (( Runtime <= MAX_runtime )); then
-    printfeild 0 "Runtime" "${Runtime}ns"
-  elif (( Runtime <= MAX_runtime * 15 / 10 )); then
-    printfeild 2 "Runtime" "${Runtime}ns"
+  if (( Runtime >= 1000000000 )); then
+    RuntimeReable="~$(( Runtime / 1000000000 ))s"
+  elif (( Runtime >= 1000000 )); then
+    RuntimeReable="~$(( Runtime / 1000000 ))ms"
   else
-    printfeild 1 "Runtime" "${Runtime}ns"
+    RuntimeReable="${Runtime}ns"
+  fi
+
+  if (( Runtime <= MAX_runtime )); then
+    printfeild 0 "Runtime" "$RuntimeReable"
+  elif (( Runtime <= MAX_runtime * 15 / 10 )); then
+    printfeild 2 "Runtime" "$RuntimeReable"
+  else
+    printfeild 1 "Runtime" "$RuntimeReable"
   fi
 }
 

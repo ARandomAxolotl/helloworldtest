@@ -41,33 +41,33 @@ for file in *; do
             ;;
 
         *.py)
-            log 33 "Building" "$file"
+            log 33 "Linkinging" "$file"
             printf '%s\n' \
                 '#!/bin/sh' \
                 'exec python3 "$(dirname "$0")/../src/'"$file"'" "$@"' \
                 > "$OUT/$file"
             chmod +x "$OUT/$file"
-            log 32 "Built" "$file"
+            log 32 "Linked" "$file"
             ;;
 
         *.sh)
-            log 33 "Building" "$file"
+            log 33 "Linking" "$file"
             printf '%s\n' \
                 '#!/bin/sh' \
                 'exec sh "$(dirname "$0")/../src/'"$file"'" "$@"' \
                 > "$OUT/$file"
             chmod +x "$OUT/$file"
-            log 32 "Built" "$file"
+            log 32 "Linked" "$file"
             ;;
 
         *.js)
-            log 33 "Building" "$file"
+            log 33 "Linking" "$file"
             printf '%s\n' \
                 '#!/bin/sh' \
                 'exec node "$(dirname "$0")/../src/'"$file"'" "$@"' \
                 > "$OUT/$file"
             chmod +x "$OUT/$file"
-            log 32 "Built" "$file"
+            log 32 "Linked" "$file"
             ;;
 
         *)
