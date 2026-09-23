@@ -36,15 +36,20 @@ CheckOutHex() {
   case "$TestOutHex" in
     48656c6c6f2c20576f726c64210a)
       printfeild 0 "Output" "$(cat "$TempDir/stdout")"
+      printfeild -1 "Hex" "$TestOutHex"
       ;;
     48656c6c6f20576f726c64210a|48656c6c6f2c20576f726c6421|48656c6c6f20576f726c6421)
       printfeild 2 "Output" "$(cat "$TempDir/stdout")"
+      printfeild -1 "Hex" "$TestOutHex"
       ;;
     68656c6c6f20576f726c64210a|656c6c6f20576f726c6421|68656c6c6f20776f726c6421|48656c6c6f20776f726c6421)
       printfeild 2 "Output" "$(cat "$TempDir/stdout")"
+      printfeild -1 "Hex" "$TestOutHex"
       ;;
     *)
       printfeild 1 "Output" "$(cat $TempDir/stdout)"
+      printfeild -1 "Hex" "$TestOutHex"
+      printfeild -1 "Expected" "48656c6c6f2c20576f726c64210a"
       ;;
   esac
 }
@@ -91,6 +96,7 @@ ParseTestProg() {
 TestResult() {
   if (( Fail > Pass )); then
     printfeild -1 "Result" "Failed"
+    (( FailedTest++ ))
   elif (( Fail > 0 )); then
     printfeild -1 "Result" "Passed with errors"
   elif (( Warn > 0 )); then
@@ -131,6 +137,7 @@ WarnCount=0
 TempDir="$(mktemp -d /tmp/helloworldtest.XXXXXX)"
 
 MaxSumLine=30
+FailedTest=0
 
 for TestProg in "$@"; do
 
@@ -175,3 +182,9 @@ done
 rm -r "$TempDir"
 
 TestSummary
+
+if (( FailedTest > 0 )); then
+  exit 1
+else
+  exit 0
+fi
