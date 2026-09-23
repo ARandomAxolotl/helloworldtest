@@ -12,4 +12,4 @@
 
 - ./helloworldtest "command 1" [program 2] [files]
 
-Example : `./helloworldtest src/* "node test.js"`
+Example : `./helloworldtest run/* "node src/test.js"`
