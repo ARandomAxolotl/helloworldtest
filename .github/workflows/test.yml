@@ -1,6 +1,6 @@
 name: workflow
 
-on: [workflow_dispatch,push]
+on: [workflow_dispatch, push]
 
 jobs:
   do_it:
@@ -15,17 +15,14 @@ jobs:
           sudo apt update
           sudo apt install -y \
             nodejs \
-            npm \
             python3 \
-            python3-pip \
             gcc \
             g++ \
             golang \
-            rustc \
-            cargo
+            rustc
 
-      - name: Start compiling test atifacts
+      - name: COMPILE
         run: src/build.sh
 
-      - name : Run Tests
+      - name: Run Tests
         run: ./helloworldtest run/*
