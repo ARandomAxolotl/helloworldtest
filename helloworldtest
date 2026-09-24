@@ -1,5 +1,16 @@
 #!/bin/bash
 
+contains() {
+  local needle="$1"
+  shift
+
+  for item in "$@"; do
+    [[ "$item" == "$needle" ]] && return 0
+  done
+
+ return 1
+}
+
 printfeild() {
   case "$1" in
     1)
@@ -33,12 +44,124 @@ printfeild() {
   printf ' %-20s : %-20s : %s\n' "$TestProg $TestProgArg" "$2" "$3"
 }
 
+if (( $# == 0 )); then
+  TestProg="helloworldtest"
+  printfeild 3 "" "No input files"
+  exit 127
+fi
+
 IsExaAble() {
-  if [ "${TestProg#*/}" = "$TestProg" ]; then
+  if [[ "${TestProg#*/}" == "$TestProg" ]]; then
     command -v "$TestProg" >/dev/null 2>&1
   else
-    [ -x "$TestProg" ]
+    [ -f "$TestProg" ] && [ -x "$TestProg" ]
   fi
+}
+
+ArgParse() {
+
+  TestProg="helloworldtest"
+
+  case "$1" in
+    --)
+      ArgAllowed=0
+      return
+      ;;
+
+    -f|--file)
+      [[ -n $2 ]] || {
+        printfeild 4 "$1" "requires an argument"
+        exit 128
+      }
+    
+      if ! contains "$2" "${ImportedFiles[@]}"; then
+        mapfile -t -O "${#Args[@]}" Args < "$2"
+
+        ImportedFiles+=("$2")
+      else
+        printfeild 4 "$2" "is imported, not reimporting!"
+      fi
+
+      ;;
+
+    -r|--runtime)
+      [[ -n $2 ]] || {
+        printfeild 4 "$1" "requires an argument"
+        exit 128
+      }
+
+      case "$2" in
+        -*)
+          if (( -"$2" >= MAX_runtime )); then
+            printfeild 4 "$1" "MAX runtime cannot be 0 or lower"
+          else
+            (( MAX_runtime += $2 * 1000000000 ))
+          fi
+          ;;
+        +*) (( MAX_runtime += $2 * 1000000000 )) ;;
+        *)
+          if (( "$2" <= 0 )); then
+            printfeild 4 "$1" "MAX runtime cannot be 0 or lower"
+          else
+            (( MAX_runtime = $2 * 1000000000 ))
+          fi
+          ;;
+      esac
+
+      if (( MAX_runtime >= 1000000000 )); then
+        RuntimeReable="~$(( MAX_runtime / 1000000000 ))s"
+      elif (( MAX_runtime >= 1000000 )); then
+        RuntimeReable="~$(( MAX_runtime / 1000000 ))ms"
+      else
+        RuntimeReable="${MAX_runtime}ns"
+      fi
+
+      printfeild 4 "$1" "Max runtime set to " "$RuntimeReable"
+
+      ;;
+    -t|--timeout)
+      [[ -n $2 ]] || {
+        printfeild 4 "$1" "requires an argument"
+        exit 128
+      }
+
+      case "$2" in
+        -*)
+          if (( -"$2" >= Runtime_limit )); then
+            printfeild 4 "$1" "Runtime limit cannot be 0 or lower"
+          else
+            (( Runtime_limit += $2))
+          fi
+          ;;
+        +*) (( Runtime_limit += $2 )) ;;
+        *)
+          if (( "$2" <= 0 )); then
+            printfeild 4 "$1" "Runtime_limit cannot be 0 or lower"
+          else
+            (( Runtime_limit = $2 ))
+          fi
+          ;;
+      esac
+
+      printfeild 4 "$1" "Runtime Limit set to " "$Runtime_limit"
+      ;;
+    --is-mizuki-tuff|--is-Mizuki-tuff)
+      AkiyamaMizukiIsTuff
+      return
+      ;;
+    -h|--help)
+      HelpArticle
+      AkiyamaMizukiIsTuff
+      exit
+      ;;
+    *)
+      printfeild 3 "Unknown argument : $1"
+      [[ -x $1 ]] && printfeild 4 "$1 might be a program, you would need to use -- for that"
+      exit 128
+  esac
+
+  (( ArgNum++ ))
+  return
 }
 
 CheckOutHex() {
@@ -142,7 +265,25 @@ TestSummary() {
   printf '%*s\n' "$MaxSumLine" '' | tr ' ' '-'
 }
 
-main() {
+HelpArticle() {
+  TestProg=""
+
+  printf '%-30s : %s\n' "--" "Makes EVERY arguments after this a testing program."
+  printf '%-30s : %s\n' "-f|--file [file]" "APPEND [file] to THE END of testing program list."
+  printf '%-30s : %s\n' "-r|--runtime (+|-)[value]" "(+|-|set) max acceptable runtime to [value]."
+  printf '%-30s : %s\n' "-t|--timeout (+|-)[value]" "(+|-|set) timeout runtime to [value]."
+  printf '%-30s : %s\n' "-h|--help" "Show this help."
+  printf '\n'
+  printf '%-30s : %s\n' "-t|--timeout|-r|--runtime +|- rule" ""
+  printf '%-30s : %s\n' '[value]' 'set [value]'
+  printf '%-30s : %s\n' '+[value]' 'add [value]'
+  printf '%-30s : %s\n' '-[value]' 'minus [value]'
+  printf '\n'
+  printf '\033[90m\033[3m%-30s\n\033[0m' "Note : arguments can be stacked and parsed in order."
+  printf '\033[90m\033[3m%-30s\n\033[0m' "The end of Hatsune Miku mentioned!"
+}
+
+DoTest() {
   ParseTestProg
 
   Warn=0
@@ -186,6 +327,16 @@ main() {
 
     rm "$TempDir"/*
   fi
+}
+
+AkiyamaMizukiIsTuff() {
+  local transBLUE='\e[38;2;91;206;250m'
+  local transPINK='\e[38;2;245;169;184m'
+  local transWHITE='\e[38;2;255;255;255m'
+  local BOLD='\e[1m'
+  local UNDERLINE='\e[4m'
+  local RESET='\e[0m'
+  printf "$UNDERLINE${transBLUE}Aki${transPINK}yama${transWHITE} Mizu${transPINK}ki${RESET} is${transBLUE} $UNDERLINE${BOLD}tuff$RESET\n"
 }
 
 Runtime_limitLck=0
@@ -270,18 +421,38 @@ FailedTest=0
 PassedTest=0
 WarnedTest=0
 
-for TestProg in "$@"; do
-  main  
+Args=("$@")
+
+RunTest() {
+  DoTest
   TestResult
   printf '\n'
+  return
+}
+
+ArgAllowed=1
+
+for ((ArgNum = 0; ArgNum < ${#Args[@]}; ArgNum++)); do
+  TestProg="${Args[ArgNum]}"
+
+  if (( ArgAllowed == 1 )); then
+    case "$TestProg" in
+      -*) ArgParse "${Args[@]:ArgNum:2}" ;;
+      *) RunTest ;;
+    esac
+  else
+    RunTest
+  fi
 done
 
 rm -r "$TempDir"
 
 TestSummary
 
-if (( FailedTest > 0 )); then
-  exit 1
+if (( FailedTest > 126 )); then
+  exit 255
+elif (( FailedTest > 0 )); then
+  exit "$FailedTest"
 else
   exit 0
 fi
