@@ -1,6 +1,6 @@
 #!/bin/bash
 
-contains() {
+array_contains() {
   local needle="$1"
   shift
 
@@ -9,6 +9,36 @@ contains() {
   done
 
  return 1
+}
+
+array_remove() {
+  local -n _array="$1"
+  local pattern="$2"
+  local i
+  local skip=false
+
+  for i in "${!_array[@]}"; do
+    if [[ ${_array[i]} == -- ]]; then
+      skip=false
+        continue
+    fi
+
+    if [[ $skip == true ]]; then
+        skip=false
+        continue
+    fi
+
+    if [[ ${_array[i]} == -* ]]; then
+      skip=true
+      continue
+    fi
+
+    [[ ${_array[i]} == $pattern ]] && unset '_array[i]'
+  done
+
+  _array=("${_array[@]}")
+
+  echo "${args[@]}"
 }
 
 printfeild() {
@@ -74,7 +104,7 @@ ArgParse() {
         exit 128
       }
     
-      if ! contains "$2" "${ImportedFiles[@]}"; then
+      if ! array_contains "$2" "${ImportedFiles[@]}"; then
         mapfile -t -O "${#Args[@]}" Args < "$2"
 
         ImportedFiles+=("$2")
@@ -160,8 +190,17 @@ ArgParse() {
         exit 128
       }
 
-      mapfile -d '' -t Args < <(find "$2" -type f -print0)
+      mapfile -d '' -t -O "${#Args[@]}" Args < <(find "$2" -type f -print0)
 
+      ;;
+
+    -e|--exclude)
+      [[ -n $2 ]] || {
+        printfeild 4 "$1" "requires an argument WHICH IS A PATTERN"
+        exit 128
+      }
+      
+      array_remove Args "$2"
       ;;
     *)
       printfeild 3 "$1" "Unknown argument"
@@ -284,14 +323,18 @@ HelpArticle() {
   printf '%-30s : %s\n' "-r|--runtime (+|-)[value]" "(+|-|set) max acceptable runtime to [value]."
   printf '%-30s : %s\n' "-t|--timeout (+|-)[value]" "(+|-|set) timeout runtime to [value]."
   printf '%-30s : %s\n' "-d|--directory [directory]" "Test every file in [directory]."
+  printf '%-30s : %s\n' "-e|--exclude [pattern]" "Execlude every file with pattern [pattern]."
   printf '%-30s : %s\n' "-h|--help" "Show this help."
   printf '\n'
   printf '%-30s : %s\n' "-t|--timeout|-r|--runtime +|- rule" ""
-  printf '%-30s : %s\n' '[value]' 'set [value]'
-  printf '%-30s : %s\n' '+[value]' 'add [value]'
-  printf '%-30s : %s\n' '-[value]' 'minus [value]'
+  printf '%-30s : %s\n' '[value]' 'set [value].'
+  printf '%-30s : %s\n' '+[value]' 'add [value].'
+  printf '%-30s : %s\n' '-[value]' 'minus [value].'
+  printf '\n'
+  printf '%-30s : %s\n' "-e|--exclude pattern" "Like bash pattern matching."
   printf '\n'
   printf '\033[90m\033[3m%-30s\n\033[0m' "Note : arguments can be stacked and parsed in order."
+  printf '\033[90m\033[3m%-30s\n\033[0m' "Note : I'm too lazy to invent regex in bash so i just borrow bash pattern matching."
   printf '\033[90m\033[3m%-30s\n\033[0m' "The end of Hatsune Miku mentioned!"
 }
 

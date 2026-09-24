@@ -40,6 +40,12 @@ Usage : `-h|--help`
 
 Usage : `-d|--directory [directory]`
 
+- `-e` or `--exclude` : exclude all files with [pattern]
+
+Usage : `-e|--exclude [pattern]`
+
+> Note : pattern is just bash pattern as I'm to lazy to invent regex in bash
+
 ## `-t|--timeout|-r|--runtime` +|- rule : 
 
 - [value] : set [value]
