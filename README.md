@@ -20,7 +20,7 @@ Example : `./helloworldtest run/* "node src/test.js"`
 
 Usage : `-f|--file [file]`
 
-- `-r` or `--runtime` : set/increase/decrease maximum cceptable runtime to/by [value]
+- `-r` or `--runtime` : set/increase/decrease maximum aceptable runtime to/by [value]
 
 Usage : `-r|--runtime (+|-)[value]`
 
@@ -38,7 +38,7 @@ Usage : `-t|--timeout (+|-)[value]`
 
 - [value] : set [value]
 - +[value] : add [value]
-- -[value] :minus [value]
+- -[value] : minus [value]
 
 <!-- Hidden flags -->
 
