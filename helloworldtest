@@ -37,8 +37,6 @@ array_remove() {
   done
 
   _array=("${_array[@]}")
-
-  echo "${args[@]}"
 }
 
 printfeild() {
