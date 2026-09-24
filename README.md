@@ -34,6 +34,12 @@ Usage : `-t|--timeout (+|-)[value]`
 
 - `-h` or `--help` : show help
 
+Usage : `-h|--help`
+
+- `-d` or `--directory` : test all file in [directory]
+
+Usage : `-d|--directory [directory]`
+
 ## `-t|--timeout|-r|--runtime` +|- rule : 
 
 - [value] : set [value]

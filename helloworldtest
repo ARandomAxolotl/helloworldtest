@@ -154,6 +154,15 @@ ArgParse() {
       AkiyamaMizukiIsTuff
       exit
       ;;
+    -d|--directory)
+      [[ -d $2 ]] || {
+        printfeild 4 "$1" "requires an argument WHICH IS A DIRECTORY"
+        exit 128
+      }
+
+      mapfile -d '' -t Args < <(find "$2" -type f -print0)
+
+      ;;
     *)
       printfeild 3 "$1" "Unknown argument"
       [[ -x $1 ]] && printfeild 4 "$1 might be a program, you would need to use -- for that."
@@ -274,6 +283,7 @@ HelpArticle() {
   printf '%-30s : %s\n' "-f|--file [file]" "APPEND [file] to THE END of testing program list."
   printf '%-30s : %s\n' "-r|--runtime (+|-)[value]" "(+|-|set) max acceptable runtime to [value]."
   printf '%-30s : %s\n' "-t|--timeout (+|-)[value]" "(+|-|set) timeout runtime to [value]."
+  printf '%-30s : %s\n' "-d|--directory [directory]" "Test every file in [directory]."
   printf '%-30s : %s\n' "-h|--help" "Show this help."
   printf '\n'
   printf '%-30s : %s\n' "-t|--timeout|-r|--runtime +|- rule" ""
