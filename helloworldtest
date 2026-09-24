@@ -188,10 +188,18 @@ ArgParse() {
         exit 128
       }
 
+      mapfile -d '' -t -O "${#Args[@]}" Args < <(find "$2" -mindepth 1 -name '.*' -prune -o -type f -print0)
+
+      ;;
+    --hidden-directory)
+      [[ -d $2 ]] || {
+        printfeild 4 "$1" "requires an argument WHICH IS A DIRECTORY"
+        exit 128
+      }
+
       mapfile -d '' -t -O "${#Args[@]}" Args < <(find "$2" -type f -print0)
 
       ;;
-
     -e|--exclude)
       [[ -n $2 ]] || {
         printfeild 4 "$1" "requires an argument WHICH IS A PATTERN"
@@ -320,7 +328,8 @@ HelpArticle() {
   printf '%-30s : %s\n' "-f|--file [file]" "APPEND [file] to THE END of testing program list."
   printf '%-30s : %s\n' "-r|--runtime (+|-)[value]" "(+|-|set) max acceptable runtime to [value]."
   printf '%-30s : %s\n' "-t|--timeout (+|-)[value]" "(+|-|set) timeout runtime to [value]."
-  printf '%-30s : %s\n' "-d|--directory [directory]" "Test every file in [directory]."
+  printf '%-30s : %s\n' "-d|--directory [directory]" "Test every file in [directory]. This will exclude the hidden ones."
+  printf '%-30s : %s\n' "--hidden-directory [directory]" "Test every file in [directory]. Including the hidden ones."
   printf '%-30s : %s\n' "-e|--exclude [pattern]" "Execlude every file with pattern [pattern]."
   printf '%-30s : %s\n' "-h|--help" "Show this help."
   printf '\n'

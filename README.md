@@ -36,15 +36,19 @@ Usage : `-t|--timeout (+|-)[value]`
 
 Usage : `-h|--help`
 
-- `-d` or `--directory` : test all file in [directory]
+- `-d` or `--directory` : test all file in [directory], excluding hidden ones.
 
 Usage : `-d|--directory [directory]`
+
+- `--hidden-directory` : test all file in [directory], including hidden ones.
+
+Usage : `--hidden-directory [directory]`
 
 - `-e` or `--exclude` : exclude all files with [pattern]
 
 Usage : `-e|--exclude [pattern]`
 
-> Note : pattern is just bash pattern as I'm to lazy to invent regex in bash
+> Note : pattern is just bash pattern as I'm to lazy to invent regex in bash.
 
 ## `-t|--timeout|-r|--runtime` +|- rule : 
 
