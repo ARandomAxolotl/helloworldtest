@@ -116,7 +116,7 @@ ArgParse() {
         RuntimeReable="${MAX_runtime}ns"
       fi
 
-      printfeild 4 "$1" "Max runtime set to " "$RuntimeReable"
+      printfeild 4 "$1" "Max pass runtime set to ${RuntimeReable}."
 
       ;;
     -t|--timeout)
@@ -128,7 +128,7 @@ ArgParse() {
       case "$2" in
         -*)
           if (( -"$2" >= Runtime_limit )); then
-            printfeild 4 "$1" "Runtime limit cannot be 0 or lower"
+            printfeild 4 "$1" "Runtime limit cannot be 0 or lower."
           else
             (( Runtime_limit += $2))
           fi
@@ -136,14 +136,14 @@ ArgParse() {
         +*) (( Runtime_limit += $2 )) ;;
         *)
           if (( "$2" <= 0 )); then
-            printfeild 4 "$1" "Runtime_limit cannot be 0 or lower"
+            printfeild 4 "$1" "Runtime_limit cannot be 0 or lower."
           else
             (( Runtime_limit = $2 ))
           fi
           ;;
       esac
 
-      printfeild 4 "$1" "Runtime Limit set to $Runtime_limit"
+      printfeild 4 "$1" "Runtime Limit set to ${Runtime_limit}s."
       ;;
     --is-mizuki-tuff|--is-Mizuki-tuff)
       AkiyamaMizukiIsTuff
@@ -155,8 +155,8 @@ ArgParse() {
       exit
       ;;
     *)
-      printfeild 3 "Unknown argument : $1"
-      [[ -x $1 ]] && printfeild 4 "$1 might be a program, you would need to use -- for that"
+      printfeild 3 "$1" "Unknown argument"
+      [[ -x $1 ]] && printfeild 4 "$1 might be a program, you would need to use -- for that."
       exit 128
   esac
 
@@ -172,10 +172,12 @@ CheckOutHex() {
     48656c6c6f20576f726c64210a|48656c6c6f2c20576f726c6421|48656c6c6f20576f726c6421)
       printfeild 2 "Output" "$(<"$TempDir/stdout")"
       printfeild -1 "Hex" "$TestOutHex"
+      printfeild -1 "Expected" "48656c6c6f2c20576f726c64210a"
       ;;
     68656c6c6f20576f726c64210a|656c6c6f20576f726c6421|68656c6c6f20776f726c6421|48656c6c6f20776f726c6421)
       printfeild 2 "Output" "$(<"$TempDir/stdout")"
       printfeild -1 "Hex" "$TestOutHex"
+      printfeild -1 "Expected" "48656c6c6f2c20576f726c64210a"
       ;;
     *)
       printfeild 1 "Output" "$(<"$TempDir/stdout")"
