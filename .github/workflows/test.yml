@@ -34,3 +34,15 @@ jobs:
           Runtime_limit=4 Max_Runtime_ms=20 ./helloworldtest run/* || true 
           Max_Runtime_ms=1 Max_Runtime_s=0 ./helloworldtest run/* || true 
           Runtime_limit=0 Max_Runtime_ms=0 Max_Runtime_s=0 ./helloworldtest run/* || true
+      - name: Run Tests with NEWER options
+        run : |
+          ./helloworldtest -d run -e '*.cpp'; true
+          ./helloworldtest -e '*.cpp' run/*; true
+          echo '-f' > program.txt; true
+          echo 'program.txt' >> program.txt; true
+          ./helloworldtest -f program.txt; true
+          rm -f program.txt; true
+          ./helloworldtest --is-Mizuki-tuff -e 'test.*' run/*; true
+          ./helloworldtest -d .; true
+
+
